@@ -1,0 +1,54 @@
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.RadioGroup;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        final Spinner spinnerCrust = findViewById(R.id.spinnerCrust);
+        final RadioGroup rgSize = findViewById(R.id.rgSize);
+        final CheckBox cbCheese = findViewById(R.id.cbCheese), cbMushrooms = findViewById(R.id.cbMushrooms),
+                cbPeppers = findViewById(R.id.cbPeppers), cbOlives = findViewById(R.id.cbOlives);
+        final TextView tvSummary = findViewById(R.id.tvSummary);
+        Button btnSubmit = findViewById(R.id.btnSubmit);
+
+        btnSubmit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int total = 0;
+                StringBuilder order = new StringBuilder("Order Details:\n");
+
+                // 1. Check Crust (Spinner)
+                String crust = spinnerCrust.getSelectedItem().toString();
+                order.append("Crust: ").append(crust).append("\n");
+                if (crust.equals("Stuffed Crust (+$2)")) total += 2;
+
+                // 2. Check Size (RadioGroup)
+                int selectedId = rgSize.getCheckedRadioButtonId();
+                if (selectedId == R.id.rbSmall) { total += 5; order.append("Size: Small\n"); }
+                else if (selectedId == R.id.rbMedium) { total += 8; order.append("Size: Medium\n"); }
+                else if (selectedId == R.id.rbLarge) { total += 12; order.append("Size: Large\n"); }
+
+                // 3. Check Toppings (Checkboxes)
+                order.append("Toppings: ");
+                if (cbCheese.isChecked()) { total += 1; order.append("Cheese "); }
+                if (cbMushrooms.isChecked()) { total += 1; order.append("Mushrooms "); }
+                if (cbPeppers.isChecked()) { total += 1; order.append("Peppers "); }
+                if (cbOlives.isChecked()) { total += 1; order.append("Olives "); }
+
+                order.append("\nTotal Price: $").append(total);
+                tvSummary.setText(order.toString());
+            }
+        });
+    }
+}
