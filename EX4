@@ -1,0 +1,161 @@
+ACTIVITY1:
+package com.example.ex4;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+public class MainActivity extends AppCompatActivity {
+    EditText e1, e2, e3, e4;
+    Button btnInsert, btnView, btnBook, btnDelete, btnUpdate, btnFirst, btnLast;
+    SQLiteDatabase db;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        e1 = findViewById(R.id.editMovie);
+        e2 = findViewById(R.id.editTheatre);
+        e3 = findViewById(R.id.editTime);
+        e4 = findViewById(R.id.editPrice);
+        btnInsert = findViewById(R.id.btn1);
+        btnView = findViewById(R.id.btnView);
+        btnBook = findViewById(R.id.btnBook);
+        btnDelete = findViewById(R.id.btnDelete);
+        btnUpdate = findViewById(R.id.btnUpdate);
+        btnFirst = findViewById(R.id.btnFirst);
+        btnLast = findViewById(R.id.btnLast);
+        db = openOrCreateDatabase("MovieDB", Context.MODE_PRIVATE, null);
+        db.execSQL("CREATE TABLE IF NOT EXISTS movie(name TEXT, theatre TEXT, time TEXT, price INTEGER)");
+        btnInsert.setOnClickListener(v -> {
+            String name = e1.getText().toString().trim();
+            String theatre = e2.getText().toString().trim();
+            String time = e3.getText().toString().trim();
+            String price = e4.getText().toString().trim();
+            if(name.isEmpty() || theatre.isEmpty() || time.isEmpty() || price.isEmpty()){
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Cursor c = db.rawQuery(
+                    "SELECT * FROM movie WHERE name=? AND theatre=? AND time=? AND price=?",
+                    new String[]{name, theatre, time, price}
+ );
+            if(c.getCount() > 0){
+                showDialog("Insertion Failed", "Movie already exists for this theatre and time with same price.");
+                        c.close();
+                return;
+            }
+            c.close();
+            db.execSQL("INSERT INTO movie VALUES('" + name + "','" + theatre + "','" + time + "'," + price + ")");
+            Toast.makeText(this, "Movie Added", Toast.LENGTH_SHORT).show();
+        });
+        btnView.setOnClickListener(v -> {
+            Cursor c = db.rawQuery("SELECT * FROM movie", null);
+            if(c.getCount() == 0){
+                showDialog("Movies","No movies found");
+                return;
+            }
+            StringBuilder sb = new StringBuilder();
+            while(c.moveToNext()){
+                sb.append("Movie: ").append(c.getString(0)).append("\n");
+                sb.append("Theatre: ").append(c.getString(1)).append("\n");
+                sb.append("Time: ").append(c.getString(2)).append("\n");
+                sb.append("Price: ").append(c.getInt(3)).append("\n\n");
+            }
+            c.close();
+            showDialog("Movie List", sb.toString());
+        });
+        btnBook.setOnClickListener(v -> {
+            String name = e1.getText().toString().trim();
+            String theatre = e2.getText().toString().trim();
+            String time = e3.getText().toString().trim();
+            String priceInput = e4.getText().toString().trim();
+            if(name.isEmpty() || theatre.isEmpty() || time.isEmpty() || priceInput.isEmpty()){
+                Toast.makeText(this, "Please fill all fields to book",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Cursor c = db.rawQuery(
+                    "SELECT * FROM movie WHERE name=? AND theatre=? AND time=? AND price=?",
+            new String[]{name, theatre, time, priceInput}
+ );
+            if(c.getCount() == 0){
+                showDialog("Booking Failed", "Movie does not exist or there is some mismatch.");
+                        c.close();
+                return;
+            }
+            c.moveToFirst();
+            int dbPrice = c.getInt(3); // get price from DB
+            c.close();
+            startActivity(new android.content.Intent(MainActivity.this, MainActivity2.class)
+                    .putExtra("name", name)
+                    .putExtra("theatre", theatre)
+                    .putExtra("time", time)
+                    .putExtra("price", priceInput));
+        });
+        btnDelete.setOnClickListener(v -> {
+            String name = e1.getText().toString().trim();
+            String theatre = e2.getText().toString().trim();
+            String time = e3.getText().toString().trim();
+            if(name.isEmpty() || theatre.isEmpty() || time.isEmpty()){
+                Toast.makeText(this, "Enter movie, theatre, and time to delete",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            db.execSQL("DELETE FROM movie WHERE name='" + name + "' AND theatre='" + theatre + "' AND time='" + time + "'");
+                    Toast.makeText(this, "Movie Deleted", Toast.LENGTH_SHORT).show();
+        });
+        btnUpdate.setOnClickListener(v -> {
+            String name = e1.getText().toString().trim();
+            String theatre = e2.getText().toString().trim();
+            String time = e3.getText().toString().trim();
+            String price = e4.getText().toString().trim();
+            if(name.isEmpty() || theatre.isEmpty() || time.isEmpty() || price.isEmpty()){
+                Toast.makeText(this, "Enter movie, theatre, time, and new price to update",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            db.execSQL("UPDATE movie SET price=" + price +
+                    " WHERE name='" + name + "' AND theatre='" + theatre + "' AND time='" +
+                    time + "'");
+            Toast.makeText(this, "Price Updated", Toast.LENGTH_SHORT).show();
+        });
+        btnFirst.setOnClickListener(v -> {
+            Cursor c = db.rawQuery("SELECT * FROM movie LIMIT 1", null);
+            if(c.moveToFirst()){
+                String details = "Movie: " + c.getString(0) +
+                        "\nTheatre: " + c.getString(1) +
+                        "\nTime: " + c.getString(2) +
+                        "\nPrice: " + c.getInt(3);
+                showDialog("First Movie", details);
+            } else {
+                showDialog("First Movie", "No movies found");
+            }
+            c.close();
+        });
+        btnLast.setOnClickListener(v -> {
+            Cursor c = db.rawQuery("SELECT * FROM movie ORDER BY rowid DESC LIMIT 1", null);
+            if(c.moveToFirst()){
+                String details = "Movie: " + c.getString(0) +
+                        "\nTheatre: " + c.getString(1) +
+                        "\nTime: " + c.getString(2) +
+                        "\nPrice: " + c.getInt(3);
+                showDialog("Last Movie", details);
+            } else {
+                showDialog("Last Movie", "No movies found");
+            }
+            c.close();
+        });
+    }
+    private void showDialog(String title, String message){
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setCancelable(true)
+                .show();
+    }
+
+}
